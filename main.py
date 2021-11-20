@@ -7,6 +7,7 @@ import pymongo
 from pymongo import MongoClient
 import time
 import math
+import rideData
 
 EMBED_COLOR = 0xffffff
 EMBED_ERROR_COLOR = 0xff0000
@@ -183,7 +184,28 @@ def main():
 
         await ctx.send(embed=simpleEmbed("Successfully created you theme park", "You now own a themepark. Use `/Park` to view info about your new park."))
 
+    @slash.slash(name="Shop", description="Buy new rides and rollercoasters here", guild_ids=guild_ids)
+    async def shop(ctx: SlashContext):
+        data = getDataById(ctx.author.id)
+        park = data["parks"][0]
 
+        embed = discord.Embed(title="Shop", description=f"You currently have `{park['money']}`$", color=EMBED_COLOR)
+
+        rides = []
+        for category in rideData.rides:
+            l = ""
+            for ride in category:
+                l += f'**{ride["name"]}**\nPrice: `{str(ride["price"])}$`\nMoney/h: `{str((ride["dep"] * ride["seats"]) * (ride["stats"]["excitement"] / 5))}$`\n'
+            rides.append(l)
+        
+        embed.add_field(name="Gentle rides", value=rides[0] if rides[0] else "More rides comming soon")
+        embed.add_field(name="Intense rides", value=rides[1] if rides[1] else "More rides comming soon")
+        embed.add_field(name="Roller coasters", value=rides[2] if rides[2] else "More rides comming soon")
+
+        embed.add_field(name="\u200B", value="Use `/ride info` to get more info about a spesific ride")
+        addFooter(embed)
+
+        await ctx.send(embed=embed)
 
 
     client.run(getToken())

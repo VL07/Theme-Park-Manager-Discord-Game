@@ -135,7 +135,7 @@ def main():
         emded.set_thumbnail(url=ctx.author.avatar_url)
 
         emded.add_field(name="Expansions", value=f"{str(park['expansions'])}/36", inline=False)
-        emded.add_field(name="Used tiles", value=f"{str(park['usedTiles'])}/9,216", inline=False)
+        emded.add_field(name="Used tiles", value=f"{str(park['usedTiles'])}/{str(256*park['expansions'])}", inline=False)
 
         emded.add_field(name="Rides", value=f"{str(len(park['rides']))} rides", inline=False)
 

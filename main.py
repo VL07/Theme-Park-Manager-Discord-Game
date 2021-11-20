@@ -6,6 +6,7 @@ from logger import *
 import pymongo
 from pymongo import MongoClient
 import time
+import math
 
 EMBED_COLOR = 0xffffff
 EMBED_ERROR_COLOR = 0xff0000
@@ -55,6 +56,34 @@ def main():
         r = None
         for result in results:
             r = result
+
+        if r:
+            park = r["parks"][0]
+
+            tb = round(time.time()) - park["moneyLastUpdated"]
+
+            hours = math.floor(tb / 3600)
+            overflow = tb - hours * 3600
+
+            log(hours)
+            log(overflow)
+
+            print(tb)
+            collection.update_one({"_id": id, "parks.name": park["name"]}, 
+            {
+                "$set": 
+                {
+                    "parks.$.moneyLastUpdated": round(time.time()) - overflow 
+                },
+                "$inc":
+                {
+                    "parks.$.money": park["iph"] * hours if hours else 0
+                }
+            }
+            )
+            r = collection.find({"_id": id})
+            for result in r:
+                r = result
         return r
 
     # Bot init
@@ -96,10 +125,20 @@ def main():
             await ctx.send(embed=noParkErrorEmbed())
             return
 
-        park = data["parks"]
-        park = park[list(park.keys())[0]]
-        
+        park = data["parks"][0]
+        print(park.items())
+
         emded = discord.Embed(title=park["name"], description=park["description"], color=EMBED_COLOR)
+        emded.add_field(name="Money", value=f"{str(park['money'])}$", inline=False)
+        emded.add_field(name="Income per hour", value=f"{str(park['iph'])}/h", inline=False)
+
+        emded.set_thumbnail(url=ctx.author.avatar_url)
+
+        emded.add_field(name="Expansions", value=f"{str(park['expansions'])}/36", inline=False)
+        emded.add_field(name="Used tiles", value=f"{str(park['usedTiles'])}/9,216", inline=False)
+
+        emded.add_field(name="Rides", value=f"{str(len(park['rides']))} rides", inline=False)
+
         emded.add_field(name="Owner", value=f"<@{str(user)}>", inline=False)
         emded.add_field(name="Created", value=f"<t:{park['created']}:f>", inline=False)
         addFooter(emded)
@@ -126,7 +165,21 @@ def main():
             await ctx.send(embed=errorEmbed("Name or descrition is to long. Max lengt for the name is `32` characters and max lengt for the description is `64` characters. "))
             return
 
-        collection.insert_one({"_id": ctx.author.id, "parks": {name: {"name": name, "description": description, "created": round(time.time())}}})
+        collection.insert_one({
+            "_id": ctx.author.id,
+            "parks": [{
+                "name": name, 
+                "description": description, 
+                "created": round(time.time()),
+                "money": 11000,
+                "expansions": 4,
+                "iph": 10,
+                "usedTiles": 0,
+                "rides": {},
+                "upgrades": {},
+                "moneyLastUpdated": round(time.time())
+            }]
+        })
 
         await ctx.send(embed=simpleEmbed("Successfully created you theme park", "You now own a themepark. Use `/Park` to view info about your new park."))
 

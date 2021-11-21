@@ -108,7 +108,7 @@ def main():
         await ctx.send(embed=embed)
 
     @slash.slash(name="Park", description="Get information about your park", guild_ids=guild_ids, options=[
-        create_option(name="user", description="Enter the name of your park", option_type=6, required=False)
+        create_option(name="user", description="Enter the owners name", option_type=6, required=False)
     ])
 
     async def _park(ctx: SlashContext, user=None):
@@ -176,8 +176,8 @@ def main():
                 "expansions": 4,
                 "iph": 10,
                 "usedTiles": 0,
-                "rides": {},
-                "upgrades": {},
+                "rides": [],
+                "upgrades": [],
                 "moneyLastUpdated": round(time.time())
             }]
         })
@@ -187,6 +187,12 @@ def main():
     @slash.slash(name="Shop", description="Buy new rides and rollercoasters here", guild_ids=guild_ids)
     async def shop(ctx: SlashContext):
         data = getDataById(ctx.author.id)
+
+        if not data:
+            error("No park")
+            await ctx.send(embed=noParkErrorEmbed())
+            return
+
         park = data["parks"][0]
 
         embed = discord.Embed(title="Shop", description=f"You currently have `{park['money']}`$", color=EMBED_COLOR)
@@ -195,17 +201,150 @@ def main():
         for category in rideData.rides:
             l = ""
             for ride in category:
-                l += f'**{ride["name"]}**\nPrice: `{str(ride["price"])}$`\nMoney/h: `{str((ride["dep"] * ride["seats"]) * (ride["stats"]["excitement"] / 5))}$`\n'
+                m = round((ride["dep"] * ride["seats"]) * (ride["stats"]["excitement"] / 10) * ((100 / min([len(park["rides"]) + 1, 100])) / 100))
+                l += f'**{ride["name"]}**\nPrice: `{str(ride["price"])}$`\nMoney/h: `{str(m)}$`\nSize: `{str(ride["size"]["x"])}x{str(ride["size"]["y"])} ({str(ride["size"]["x"] * ride["size"]["y"])} tiles)`\n`/buy {ride["id"]}`\n'
             rides.append(l)
         
         embed.add_field(name="Gentle rides", value=rides[0] if rides[0] else "More rides comming soon")
         embed.add_field(name="Intense rides", value=rides[1] if rides[1] else "More rides comming soon")
         embed.add_field(name="Roller coasters", value=rides[2] if rides[2] else "More rides comming soon")
 
-        embed.add_field(name="\u200B", value="Use `/ride info` to get more info about a spesific ride")
+        embed.add_field(name="\u200B", value="Use `/rideinfo <ride id>` to get more info about a spesific ride")
         addFooter(embed)
 
         await ctx.send(embed=embed)
+
+    @slash.slash(name="Buy", description="Buy anything from the shop", guild_ids=guild_ids, options=[
+        create_option(name="ride", description="Enter the id of the ride", option_type=3, required=True)
+    ])
+    async def buy(ctx: SlashContext, ride: str):
+        exists = False
+        r = None
+        ride = ride.lower()
+        for category in rideData.rides[0:1]:
+            for _ride in category:
+                if _ride["id"] == ride:
+                    exists = True
+                    r = _ride
+                    break
+            if exists:
+                break
+        
+        isARollercoaster = False
+
+        for _ride in rideData.rides[2]:
+            if exists: break
+            if _ride["id"] == ride:
+                exists = True
+                r = _ride
+                isARollercoaster = True
+                break
+        
+        if not exists:
+            await ctx.send(embed=errorEmbed(f"`{ride}` is not a valid ride! Use `/shop` to get a list of all rides"))
+            return
+
+        ride = r
+
+        data = getDataById(ctx.author.id)
+
+        if not data:
+            error("No park")
+            await ctx.send(embed=noParkErrorEmbed())
+            return
+
+        park = data["parks"][0]
+
+        if len(park["rides"]) == 50:
+            await ctx.send(embed=errorEmbed(f"You have reached the limit of `50` rides in your park"))
+            return
+
+        if park["money"] < ride["price"]:
+            await ctx.send(embed=errorEmbed(f"You need `{str(ride['price'] - park['money'])}$` more money to buy `{ride['name']}`"))
+            return
+
+        if (park["usedTiles"] + ride["size"]["total"]) > park["expansions"] * 256:
+            await ctx.send(embed=errorEmbed(f"You need `{str(park['usedTiles'] + ride['size']['total'] - park['expansions'] * 256)} tiles` more space to buy `{ride['name']}`"))
+            return
+
+        iph = round((ride["dep"] * ride["seats"]) * (ride["stats"]["excitement"] / 10) * ((100 / min([len(park["rides"]) + 1, 100])) / 100))
+
+        collection.update_one({"_id": ctx.author.id, "parks.name": park["name"]}, 
+            {
+                "$push": 
+                {
+                    "parks.$.rides": 
+                    {
+                        "id": ride["id"], 
+                        "name": ride["name"],
+                        "created": round(time.time()),
+                        "iph": iph
+                    }
+                },
+                "$inc":
+                {
+                    "parks.$.iph": iph,
+                    "parks.$.usedTiles": ride["size"]["total"]
+                }
+            }
+            )
+
+        embed = simpleEmbed("Successfully bought new ride", f"`{ride['name']}` was successfully built. You now earn `{str(iph + park['iph'])}$` per hour")
+        await ctx.send(embed = embed)
+
+    @slash.slash(name="Rideinfo", description="Get more information about a ride", guild_ids=guild_ids, options=[
+        create_option(name="ride", description="Enter the id of the ride", option_type=3, required=True)
+    ])
+    async def rideinfo(ctx: SlashContext, ride: str):
+        ride = ride.lower()
+        exists = False
+        r = None
+        for category in rideData.rides[0:1]:
+            for _ride in category:
+                if _ride["id"] == ride:
+                    exists = True
+                    r = _ride
+                    break
+            if exists:
+                break
+
+        if not exists:
+            await ctx.send(embed=errorEmbed(f"`{ride}` is not a valid ride! Use `/shop` to get a list of all rides"))
+            return
+
+        embed = discord.Embed(title=ride, description=f"Showing info for `{ride}`", color=EMBED_COLOR)
+        embed.add_field(name="Price", value=f"`{str(r['price'])}$`")
+        embed.add_field(name="Default entry price", value=f"`{str(r['dep'])}$`")
+        embed.add_field(name="Seats", value=f"`{str(r['seats'])}$`")
+        embed.add_field(name="Size", value=f"`{str(r['size']['x'])}x{str(r['size']['y'])} ({str(r['size']['total'])} tiles)`")
+        embed.add_field(name="Stats", value=f"""Excitement: `{str(r['stats']['excitement'])}\n`Intensity: `{str(r['stats']['intensity'])}\n`Nausea: `{str(r['stats']['nausea'])}`""")
+
+        addFooter(embed)
+
+        await ctx.send(embed=embed)
+    
+    @slash.slash(name="Rides", description="Get info about all your rides", guild_ids=guild_ids, options=[
+        create_option(name="user", description="Enter the name of the owner of the park you want to get info about", option_type=6, required=False)
+    ])
+    async def rides(ctx: SlashContext, user=None):
+        data = getDataById(ctx.author.id)
+
+        if not user:
+            user = ctx.author
+
+        if not data:
+            error("No park")
+            await ctx.send(embed=noParkErrorEmbed())
+            return
+
+        embed = discord.Embed(title="Rides", description=f"All of {user.mention}s rides ")
+        for ride in data["parks"][0]["rides"]:
+            embed.add_field(name=ride["name"], value=f"Income per hour: `{str(ride['iph'])}$`\nBuilt: <t:{str(ride['created'])}:f>")
+
+        addFooter(embed)
+
+        await ctx.send(embed=embed)
+        
 
 
     client.run(getToken())

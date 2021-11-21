@@ -3,7 +3,6 @@ from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils.manage_commands import create_option
 from discord.ext import commands
 from logger import *
-import pymongo
 from pymongo import MongoClient
 import time
 import math

@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import time
 import math
 import rideData
+from classes import ride as rideClasses
 
 EMBED_COLOR = 0x36393F
 EMBED_ERROR_COLOR = 0xff0000
@@ -194,14 +195,15 @@ def main():
 
         park = data["parks"][0]
 
-        embed = discord.Embed(title="Shop", description=f"You currently have `{park['money']}`$", color=EMBED_COLOR)
+        embed = discord.Embed(title="Shop", description=f"You currently have `{park['money']}$`", color=EMBED_COLOR)
 
         rides = []
         for category in rideData.rides:
             l = ""
+            ride: rideClasses.Ride
             for ride in category:
-                m = round((ride["dep"] * ride["seats"]) * (ride["stats"]["excitement"] / 10) * ((100 / min([len(park["rides"]) + 1, 100])) / 100))
-                l += f'**{ride["name"]}**\nPrice: `{str(ride["price"])}$`\nMoney/h: `{str(m)}$`\nSize: `{str(ride["size"]["x"])}x{str(ride["size"]["y"])} ({str(ride["size"]["x"] * ride["size"]["y"])} tiles)`\n`/buy {ride["id"]}`\n\n'
+                m = round((ride.dep * ride.seats) * (ride.stats.excitement / 10) * ((100 / min([len(park["rides"]) + 1, 100])) / 100))
+                l += f'**{ride.name}**\nPrice: `{str(ride.price)}$`\nMoney/h: `{str(m)}$`\nSize: `{str(ride.size.x)}x{str(ride.size.y)} ({str(ride.size.total)} tiles)`\n`/buy {ride.id}`\n\n'
             rides.append(l)
         
         embed.add_field(name="Gentle rides", value=rides[0] if rides[0] else "More rides comming soon")
@@ -300,7 +302,7 @@ def main():
         r = None
         for category in rideData.rides[0:1]:
             for _ride in category:
-                if _ride["id"] == ride:
+                if _ride.id == ride:
                     exists = True
                     r = _ride
                     break
@@ -312,11 +314,11 @@ def main():
             return
 
         embed = discord.Embed(title=ride, description=f"Showing info for `{ride}`", color=EMBED_COLOR)
-        embed.add_field(name="Price", value=f"`{str(r['price'])}$`")
-        embed.add_field(name="Default entry price", value=f"`{str(r['dep'])}$`")
-        embed.add_field(name="Seats", value=f"`{str(r['seats'])}$`")
-        embed.add_field(name="Size", value=f"`{str(r['size']['x'])}x{str(r['size']['y'])} ({str(r['size']['total'])} tiles)`")
-        embed.add_field(name="Stats", value=f"""Excitement: `{str(r['stats']['excitement'])}\n`Intensity: `{str(r['stats']['intensity'])}\n`Nausea: `{str(r['stats']['nausea'])}`""")
+        embed.add_field(name="Price", value=f"`{str(r.price)}$`")
+        embed.add_field(name="Default entry price", value=f"`{str(r.dep)}$`")
+        embed.add_field(name="Seats", value=f"`{str(r.seats)}`")
+        embed.add_field(name="Size", value=f"`{str(r.size.x)}x{str(r.size.y)} ({str(r.size.total)} tiles)`")
+        embed.add_field(name="Stats", value=f"""Excitement: `{str(r.stats.excitement)}\n`Intensity: `{str(r.stats.intensity)}\n`Nausea: `{str(r.stats.nausea)}`""")
 
         addFooter(embed)
 

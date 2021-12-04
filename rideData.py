@@ -1,6 +1,10 @@
+from classes.ride import *
+
+
+
 rides = [
     [
-        {
+        Ride({
             "id": "tecups", 
             "name": "Tecups", 
             "price": 1500,
@@ -16,8 +20,8 @@ rides = [
                 "y": 3,
                 "total": 9
             }
-        },
-        {
+        }),
+        Ride({
             "id": "carousel",
             "name": "Carousel", 
             "price": 5000,
@@ -33,8 +37,8 @@ rides = [
                 "y": 3,
                 "total": 9
             }
-        },
-        {
+        }),
+        Ride({
             "id": "spiralslide",
             "name": "Spiral slide", 
             "price": 1600,
@@ -50,7 +54,7 @@ rides = [
                 "y": 3,
                 "total": 9
             }
-        },
+        }),
         
     ],
     [

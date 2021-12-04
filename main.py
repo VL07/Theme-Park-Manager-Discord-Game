@@ -8,7 +8,7 @@ import time
 import math
 import rideData
 
-EMBED_COLOR = 0xffffff
+EMBED_COLOR = 0x36393F
 EMBED_ERROR_COLOR = 0xff0000
 
 guild_ids = [770625249469399051]
@@ -129,18 +129,18 @@ def main():
         print(park.items())
 
         emded = discord.Embed(title=park["name"], description=park["description"], color=EMBED_COLOR)
-        emded.add_field(name="💰 Money", value=f"{str(park['money'])}$", inline=False)
-        emded.add_field(name="⏱ Income per hour", value=f"{str(park['iph'])}/h", inline=False)
+        emded.add_field(name="💰 Money", value=f"{str(park['money'])}$\n", inline=False)
+        emded.add_field(name="⏱ Income per hour", value=f"{str(park['iph'])}/h\n", inline=False)
 
         emded.set_thumbnail(url=ctx.author.avatar_url)
 
-        emded.add_field(name="🔳 Expansions", value=f"{str(park['expansions'])}/36", inline=False)
-        emded.add_field(name="⬜️ Used tiles", value=f"{str(park['usedTiles'])}/{str(256*park['expansions'])}", inline=False)
+        emded.add_field(name="🔳 Expansions", value=f"{str(park['expansions'])}/36\n", inline=False)
+        emded.add_field(name="⬜️ Used tiles", value=f"{str(park['usedTiles'])}/{str(256*park['expansions'])}\n", inline=False)
 
-        emded.add_field(name="🎡 Rides", value=f"{str(len(park['rides']))} rides", inline=False)
+        emded.add_field(name="🎡 Rides", value=f"{str(len(park['rides']))} rides\n", inline=False)
 
-        emded.add_field(name="😀 Owner", value=f"<@{str(user)}>", inline=False)
-        emded.add_field(name="📆 Created", value=f"<t:{park['created']}:f>", inline=False)
+        emded.add_field(name="😀 Owner", value=f"<@{str(user)}>\n", inline=False)
+        emded.add_field(name="📆 Created", value=f"<t:{park['created']}:f>\n", inline=False)
         addFooter(emded)
 
         await ctx.send(embed=emded)
@@ -201,7 +201,7 @@ def main():
             l = ""
             for ride in category:
                 m = round((ride["dep"] * ride["seats"]) * (ride["stats"]["excitement"] / 10) * ((100 / min([len(park["rides"]) + 1, 100])) / 100))
-                l += f'**{ride["name"]}**\nPrice: `{str(ride["price"])}$`\nMoney/h: `{str(m)}$`\nSize: `{str(ride["size"]["x"])}x{str(ride["size"]["y"])} ({str(ride["size"]["x"] * ride["size"]["y"])} tiles)`\n`/buy {ride["id"]}`\n'
+                l += f'**{ride["name"]}**\nPrice: `{str(ride["price"])}$`\nMoney/h: `{str(m)}$`\nSize: `{str(ride["size"]["x"])}x{str(ride["size"]["y"])} ({str(ride["size"]["x"] * ride["size"]["y"])} tiles)`\n`/buy {ride["id"]}`\n\n'
             rides.append(l)
         
         embed.add_field(name="Gentle rides", value=rides[0] if rides[0] else "More rides comming soon")

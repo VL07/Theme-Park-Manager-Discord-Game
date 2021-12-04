@@ -129,18 +129,18 @@ def main():
         print(park.items())
 
         emded = discord.Embed(title=park["name"], description=park["description"], color=EMBED_COLOR)
-        emded.add_field(name="Money", value=f"{str(park['money'])}$", inline=False)
-        emded.add_field(name="Income per hour", value=f"{str(park['iph'])}/h", inline=False)
+        emded.add_field(name="💰 Money", value=f"{str(park['money'])}$", inline=False)
+        emded.add_field(name="⏱ Income per hour", value=f"{str(park['iph'])}/h", inline=False)
 
         emded.set_thumbnail(url=ctx.author.avatar_url)
 
-        emded.add_field(name="Expansions", value=f"{str(park['expansions'])}/36", inline=False)
-        emded.add_field(name="Used tiles", value=f"{str(park['usedTiles'])}/{str(256*park['expansions'])}", inline=False)
+        emded.add_field(name="🔳 Expansions", value=f"{str(park['expansions'])}/36", inline=False)
+        emded.add_field(name="⬜️ Used tiles", value=f"{str(park['usedTiles'])}/{str(256*park['expansions'])}", inline=False)
 
-        emded.add_field(name="Rides", value=f"{str(len(park['rides']))} rides", inline=False)
+        emded.add_field(name="🎡 Rides", value=f"{str(len(park['rides']))} rides", inline=False)
 
-        emded.add_field(name="Owner", value=f"<@{str(user)}>", inline=False)
-        emded.add_field(name="Created", value=f"<t:{park['created']}:f>", inline=False)
+        emded.add_field(name="😀 Owner", value=f"<@{str(user)}>", inline=False)
+        emded.add_field(name="📆 Created", value=f"<t:{park['created']}:f>", inline=False)
         addFooter(emded)
 
         await ctx.send(embed=emded)
@@ -326,22 +326,29 @@ def main():
         create_option(name="user", description="Enter the name of the owner of the park you want to get info about", option_type=6, required=False)
     ])
     async def rides(ctx: SlashContext, user=None):
-        data = getDataById(ctx.author.id)
 
         if not user:
             user = ctx.author
+
+        data = getDataById(user.id)
 
         if not data:
             error("No park")
             await ctx.send(embed=noParkErrorEmbed())
             return
 
-        embed = discord.Embed(title="Rides", description=f"All of {user.mention}s rides ")
+        embed = discord.Embed(title="Rides", description=f"All of {user.mention}s rides ", color=EMBED_COLOR)
         for ride in data["parks"][0]["rides"]:
             embed.add_field(name=ride["name"], value=f"Income per hour: `{str(ride['iph'])}$`\nBuilt: <t:{str(ride['created'])}:f>")
 
         addFooter(embed)
 
+        await ctx.send(embed=embed)
+
+    @slash.slash(name="Github", description="Get link to this bots Github page", guild_ids=guild_ids)
+    async def github(ctx: SlashContext):
+        embed = discord.Embed(title="Github", description="[Here](https://github.com/VL07/Theme-Park-Manager-Discord-Game) is the bots repository!", url="https://github.com/VL07/Theme-Park-Manager-Discord-Game")
+        addFooter(embed)
         await ctx.send(embed=embed)
         
 
